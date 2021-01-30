@@ -1,0 +1,84 @@
+/*
+	Jan 30, 2021:    Added preferences.
+    Jan 28, 2021:    Started.
+*/
+public static String version() { return "Jan 30, 2021" }
+
+metadata {
+    definition (name: "Advanced Virtual Presence Sensor", namespace: "TT", author: "Teodor Todorov") {
+        capability "PresenceSensor"
+        capability "Switch"
+        
+        command "arrived"
+		command "departed"
+    }   
+    preferences { 
+        input(
+            name: "arrivalDelay",
+            type: "number",
+            title: "ARRIVAL DELAY",
+            description: "Event arrival trigger dellayed in seconds.",
+            range: "0..600",
+            defaultValue: "7",
+            requred: true
+         )
+         input(
+            name: "departureDelay",
+            type: "number",
+            title: "DEPARTURE DELAY",
+            description: "Event departure trigger dellayed in seconds.",
+            range: "0..600",
+            defaultValue: "10",
+            requred: true
+         )
+    }
+}
+
+
+def installed() {
+    log.info ("installed")
+}
+
+
+def ArrivedDelayed() {
+    log.trace ("${device.name} ArrivedDelayed() invoked, ${settings.arrivalDelay}s.")
+    runIn(settings.arrivalDelay, 'Brain', [data: ["status":"arrived"]])
+}
+
+def DepartedDelayed() {
+    log.trace ("${device.name} DepartedDelayed() invoked, ${settings.departureDelay}s.")
+    runIn(settings.departureDelay, 'Brain', [data: ["status":"departed"]])
+}
+
+def Brain(Map cmd = null) {
+    log.trace ("${device.name} status changed to ${cmd.status}, as seems not false event.")
+    
+    switch (cmd.status) {
+    case "arrived":
+        on()
+        break        
+    case "departed":  
+        off()
+        break
+    }
+}
+
+def arrived() {
+    // Invoke delayed event to remove false possitives.
+	ArrivedDelayed()
+}
+
+def on() {
+    sendEvent(name: "presence", value: "present", descriptionText: "${device.getLabel()} arrived in ${location.name}")
+	sendEvent(name: "switch", value: "on")
+}
+
+def departed() {
+    // Invoke delayed event to remove false possitives.
+	DepartedDelayed()
+}
+
+def off() {
+    sendEvent(name: "presence", value: "not present", descriptionText: "${device.getLabel()} left ${location.name}")
+	sendEvent(name: "switch", value: "off")
+}
