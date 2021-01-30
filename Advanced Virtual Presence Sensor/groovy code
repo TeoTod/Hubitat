@@ -10,7 +10,7 @@ metadata {
         capability "Switch"
         
         command "arrived"
-		command "departed"
+	command "departed"
     }   
     preferences { 
         input(
